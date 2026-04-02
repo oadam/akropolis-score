@@ -1,12 +1,8 @@
 <template>
   <div class="app">
-    <div class="top-bar">
-      <h1>{{ t.title }}</h1>
-      <button class="reset-btn" @click="reset">{{ t.reset }}</button>
-    </div>
     <div class="table">
       <div class="row header">
-        <div class="cell cell-type"></div>
+        <div class="cell cell-type title">{{ t.title }}</div>
         <div class="cell cell-plazas">{{ t.plazas }}</div>
         <div class="cell cell-districts">{{ t.districts }}</div>
         <div class="cell cell-score"></div>
@@ -59,7 +55,10 @@
       </div>
 
       <div class="row total-row">
-        <div class="cell cell-type">{{ t.total }}</div>
+        <div class="cell cell-type">
+          <span>{{ t.total }}</span>
+          <button class="reset-btn" @click="reset">{{ t.reset }}</button>
+        </div>
         <div class="cell cell-plazas"></div>
         <div class="cell cell-districts"></div>
         <div class="cell cell-score">{{ total }}</div>
@@ -75,7 +74,7 @@ const isFrench = navigator.language.startsWith('fr')
 
 const t = {
   title:     isFrench ? 'Score Akropolis' : 'Akropolis Score',
-  reset:     isFrench ? 'Réinitialiser'   : 'Reset',
+  reset:     isFrench ? 'Réinit.'         : 'Reset',
   plazas:    isFrench ? 'Places'          : 'Plazas',
   districts: isFrench ? 'Quartiers'       : 'Districts',
   stones:    isFrench ? 'Pierres'         : 'Stones',
@@ -115,15 +114,15 @@ function reset() {
 </script>
 
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
 
 body {
   font-family: system-ui, sans-serif;
-  background: #111;
   color: #fff;
   min-height: 100svh;
   display: flex;
   justify-content: center;
+  background: #111;
   padding: 1.5rem 1rem 3rem;
 }
 
@@ -132,41 +131,10 @@ body {
   max-width: 600px;
 }
 
-.top-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  margin-bottom: 1.5rem;
-}
-
-h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: #e2c97e;
-}
-
-.reset-btn {
-  position: absolute;
-  right: 0;
-  background: none;
-  border: none;
-  color: #888;
-  font-size: 0.8rem;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  padding: 0;
-}
-
-.reset-btn:hover { color: #ccc; }
-
 .table {
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
 }
 
 .row {
@@ -175,13 +143,26 @@ h1 {
   align-items: center;
 }
 
+/* Header row doubles as title */
 .header {
-  background: #1e1e1e;
+  background: #1a1a2e;
+  padding: 0.6rem 0;
+}
+
+.header .cell-plazas,
+.header .cell-districts {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: #888;
-  padding: 0.5rem 0;
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #e2c97e;
 }
 
 .cell {
@@ -234,6 +215,8 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
+  padding-bottom: 1px;
 }
 
 .arrow:hover { background: rgba(0,0,0,0.35); }
@@ -292,7 +275,7 @@ h1 {
 
 /* Total row */
 .total-row {
-  background: #1e1e1e;
+  background: #1a1a2e;
   border-top: 2px solid #e2c97e;
   min-height: 60px;
 }
@@ -303,11 +286,27 @@ h1 {
 }
 
 .total-row .cell-type {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  color: #e2c97e;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #e2c97e;
 }
+
+.reset-btn {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 0.7rem;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0;
+}
+
+.reset-btn:hover { color: #aaa; }
 
 /* Responsive */
 @media (max-width: 400px) {
@@ -322,5 +321,7 @@ h1 {
   .num { font-size: 1rem; }
 
   .arrow { width: 24px; }
+
+  .title { font-size: 0.8rem; }
 }
 </style>
