@@ -55,30 +55,42 @@
       </div>
 
       <div class="row total-row">
-        <div class="cell cell-type">
-          <span>{{ t.total }}</span>
-          <button class="reset-btn" @click="reset">{{ t.reset }}</button>
-        </div>
+        <div class="cell cell-type">{{ t.total }}</div>
         <div class="cell cell-plazas"></div>
         <div class="cell cell-districts"></div>
         <div class="cell cell-score">{{ total }}</div>
       </div>
     </div>
+
+    <div class="history">
+      <span class="history-label">{{ t.history }}</span>
+      <button
+        v-for="(entry, i) in history"
+        :key="i"
+        class="history-btn"
+        :class="{ active: activeEntry === entry }"
+        @click="restore(entry)"
+      >{{ entry.total }}</button>
+      <button class="new-btn" @click="newEntry" :title="t.newEntry">＋</button>
+      <button class="trash-btn" @click="clearHistory" :title="t.clearHistory">🗑</button>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, computed, watchEffect } from 'vue'
 
 const isFrench = navigator.language.startsWith('fr')
 
 const t = {
-  title:     isFrench ? 'Score Akropolis' : 'Akropolis Score',
-  reset:     isFrench ? 'Réinit.'         : 'Reset',
-  plazas:    isFrench ? 'Places'          : 'Plazas',
-  districts: isFrench ? 'Quartiers'       : 'Districts',
-  stones:    isFrench ? 'Pierres'         : 'Stones',
-  total:     'Total',
+  title:          isFrench ? 'Score Akropolis'              : 'Akropolis Score',
+  plazas:         isFrench ? 'Places'                       : 'Plazas',
+  districts:      isFrench ? 'Quartiers'                    : 'Districts',
+  stones:         isFrench ? 'Pierres'                      : 'Stones',
+  total:          'Total',
+  history:      isFrench ? 'Scores'        : 'Scores',
+  newEntry:     isFrench ? 'Nouveau score' : 'New score',
+  clearHistory: isFrench ? 'Tout supprimer': 'Clear all',
 }
 
 const DISTRICT_NAMES = isFrench
@@ -104,12 +116,59 @@ const total = computed(() =>
   rows.reduce((sum, row) => sum + score(row), 0) + stones.value
 )
 
+const history = reactive([])
+const activeEntry = ref(null)
+
+function applyEntry(entry) {
+  entry.snapshot.forEach((s, i) => { rows[i].plazas = s.plazas; rows[i].districts = s.districts })
+  stones.value = entry.stones
+  activeEntry.value = entry
+}
+
+function newEntry() {
+  const entry = { snapshot: rows.map(() => ({ plazas: 0, districts: 0 })), stones: 0, total: 0 }
+  history.push(entry)
+  applyEntry(entry)
+}
+
+// Persist state across reloads
+try {
+  const saved = JSON.parse(localStorage.getItem('akropolis-state'))
+  if (saved?.history?.length) {
+    history.push(...saved.history)
+    applyEntry(history[Math.max(0, saved.activeEntryIndex ?? 0)])
+  }
+} catch (e) {}
+
+if (history.length === 0) newEntry()
+
+// Auto-save active entry on every change
+watchEffect(() => {
+  if (!activeEntry.value) return
+  activeEntry.value.snapshot = rows.map(r => ({ plazas: r.plazas, districts: r.districts }))
+  activeEntry.value.stones = stones.value
+  activeEntry.value.total = total.value
+})
+
+watchEffect(() => {
+  localStorage.setItem('akropolis-state', JSON.stringify({
+    history,
+    activeEntryIndex: activeEntry.value ? history.indexOf(activeEntry.value) : 0,
+  }))
+})
+
 function inc(row, field) { row[field]++ }
 function dec(row, field) { if (row[field] > 0) row[field]-- }
 function decStones() { if (stones.value > 0) stones.value-- }
-function reset() {
-  rows.forEach(row => { row.plazas = 0; row.districts = 0 })
-  stones.value = 0
+
+function restore(entry) {
+  applyEntry(entry)
+}
+
+function clearHistory() {
+  history.splice(0)
+  activeEntry.value = null
+  newEntry()
 }
 </script>
 
@@ -123,12 +182,12 @@ body {
   display: flex;
   justify-content: center;
   background: #111;
-  padding: 1.5rem 1rem 3rem;
+  padding: 1rem 1rem 3rem;
 }
 
 .app {
-  width: 100%;
-  max-width: 600px;
+  width: min(100%, 600px);
+  min-width: 0;
 }
 
 .table {
@@ -286,27 +345,72 @@ body {
 }
 
 .total-row .cell-type {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
   color: #e2c97e;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
 
-.reset-btn {
-  background: none;
-  border: none;
-  color: #666;
-  font-size: 0.7rem;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  padding: 0;
+/* History */
+.history {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding-left: 0.25rem;
+  width: 100%;
+  overflow: hidden;
 }
 
-.reset-btn:hover { color: #aaa; }
+.history-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #555;
+  margin-right: 0.2rem;
+}
+
+.history-btn, .new-btn, .trash-btn {
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.history-btn {
+  background: #1a1a2e;
+  border: 1px solid #333;
+  color: #e2c97e;
+}
+
+.history-btn:hover, .history-btn.active {
+  background: #252540;
+  border-color: #e2c97e;
+}
+
+.new-btn {
+  background: none;
+  border: 1px solid #444;
+  color: #888;
+}
+
+.new-btn:hover { border-color: #e2c97e; color: #e2c97e; }
+
+.trash-btn {
+  background: none;
+  border: 1px solid #444;
+  color: #888;
+}
+
+.trash-btn:hover { border-color: #ef4444; color: #ef4444; }
 
 /* Responsive */
 @media (max-width: 400px) {
