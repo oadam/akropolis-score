@@ -63,16 +63,24 @@
     </div>
 
     <div class="history">
-      <span class="history-label">{{ t.history }}</span>
-      <button
-        v-for="(entry, i) in history"
-        :key="i"
-        class="history-btn"
-        :class="{ active: activeEntry === entry }"
-        @click="restore(entry)"
-      >{{ entry.total }}</button>
-      <button class="new-btn" @click="newEntry" :title="t.newEntry">＋</button>
-      <button class="trash-btn" @click="clearHistory" :title="t.clearHistory">🗑</button>
+      <template v-if="!confirmingClear">
+        <span class="history-label">{{ t.history }}</span>
+        <button
+          v-for="(entry, i) in history"
+          :key="i"
+          class="history-btn"
+          :class="{ active: activeEntry === entry }"
+          @click="restore(entry)"
+        >{{ entry.total }}</button>
+        <button class="new-btn" @click="newEntry" :title="t.newEntry">＋</button>
+      </template>
+      <div class="clear-zone">
+        <template v-if="confirmingClear">
+          <button class="cancel-btn" @click="confirmingClear = false">{{ t.cancel }}</button>
+          <button class="confirm-btn" @click="confirmingClear = false; clearHistory()">{{ t.confirmClear }}</button>
+        </template>
+        <button v-else class="trash-btn" @click="confirmingClear = true" :title="t.clearHistory">🗑</button>
+      </div>
     </div>
   </div>
 </template>
@@ -90,7 +98,9 @@ const t = {
   total:          'Total',
   history:      isFrench ? 'Scores'        : 'Scores',
   newEntry:     isFrench ? 'Nouveau score' : 'New score',
-  clearHistory: isFrench ? 'Tout supprimer': 'Clear all',
+  clearHistory:  isFrench ? 'Tout supprimer' : 'Clear all',
+  cancel:        isFrench ? 'Annuler'        : 'Cancel',
+  confirmClear:  isFrench ? 'Supprimer'      : 'Reset',
 }
 
 const DISTRICT_NAMES = isFrench
@@ -118,6 +128,7 @@ const total = computed(() =>
 
 const history = reactive([])
 const activeEntry = ref(null)
+const confirmingClear = ref(false)
 
 function applyEntry(entry) {
   entry.snapshot.forEach((s, i) => { rows[i].plazas = s.plazas; rows[i].districts = s.districts })
@@ -411,6 +422,41 @@ body {
 }
 
 .trash-btn:hover { border-color: #ef4444; color: #ef4444; }
+
+.clear-zone {
+  margin-left: auto;
+  display: flex;
+  gap: 0.4rem;
+}
+
+.cancel-btn, .confirm-btn {
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.cancel-btn {
+  background: none;
+  border: 1px solid #444;
+  color: #888;
+}
+
+.cancel-btn:hover { border-color: #aaa; color: #aaa; }
+
+.confirm-btn {
+  background: none;
+  border: 1px solid #7f1d1d;
+  color: #ef4444;
+}
+
+.confirm-btn:hover { background: #7f1d1d; color: #fff; }
 
 /* Responsive */
 @media (max-width: 400px) {
